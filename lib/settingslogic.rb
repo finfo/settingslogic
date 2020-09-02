@@ -55,29 +55,35 @@ class Settingslogic < Hash
     end
 
     private
-      def instance
-        return @instance if @instance
-        @instance = new
-        create_accessors!
-        @instance
-      end
 
-      def method_missing(name, *args, &block)
-        instance.send(name, *args, &block)
-      end
+    def instance
+      return @instance if @instance
 
-      # It would be great to DRY this up somehow, someday, but it's difficult because
-      # of the singleton pattern.  Basically this proxies Setting.foo to Setting.instance.foo
-      def create_accessors!
-        instance.each do |key,val|
-          create_accessor_for(key)
-        end
-      end
+      @instance = new
+      create_accessors!
+      @instance
+    end
 
-      def create_accessor_for(key)
-        return unless key.to_s =~ /^\w+$/  # could have "some-setting:" which blows up eval
-        instance_eval "def #{key}; instance.send(:#{key}); end"
+    def respond_to_missing?(method_name, include_private = false)
+      instance.key?(method_name.to_s) || super
+    end
+
+    def method_missing(name, *args, &block)
+      instance.send(name, *args, &block)
+    end
+
+    # It would be great to DRY this up somehow, someday, but it's difficult because
+    # of the singleton pattern.  Basically this proxies Setting.foo to Setting.instance.foo
+    def create_accessors!
+      instance.each do |key,val|
+        create_accessor_for(key)
       end
+    end
+
+    def create_accessor_for(key)
+      return unless key.to_s =~ /^\w+$/  # could have "some-setting:" which blows up eval
+      instance_eval "def #{key}; instance.send(:#{key}); end"
+    end
 
   end
 
